@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Góndola - Ubicación de Productos</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Vista minimalista para cliente */
+        body {
+            padding: 5px;
+            margin: 0;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0;
+        }
+        
+        .client-header {
+            background: #ffffff;
+            color: #333;
+            padding: 15px 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+        }
+        
+        .client-header h1 {
+            color: #333;
+            font-size: 1.3em;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .client-header-logo {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            height: 20px;
+            width: auto;
+            object-fit: contain;
+        }
+        
+        .gondola-selector {
+            display: inline-block;
+            position: relative;
+        }
+        
+        .gondola-selector select {
+            appearance: none;
+            background: #f5f5f5;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 6px 32px 6px 12px;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+        
+        .gondola-selector select:hover {
+            border-color: #bdbdbd;
+            background: #eeeeee;
+        }
+        
+        .gondola-selector select:focus {
+            border-color: #999;
+            background: #ffffff;
+        }
+        
+        .gondola-selector::after {
+            content: '▼';
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: #666;
+            font-size: 0.8em;
+        }
+        
+        .gondola-container {
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .gondola {
+            gap: 6px;
+            padding: 10px;
+            min-height: auto;
+            background: transparent;
+        }
+        
+        .gondola::before {
+            display: none;
+        }
+        
+        .shelf-cell {
+            cursor: pointer;
+            min-height: 140px;
+            background: #fafafa;
+            border: 2px solid #e0e0e0;
+            transition: all 0.3s ease;
+        }
+        
+        .shelf-cell:hover {
+            transform: none;
+            border-color: #bdbdbd;
+        }
+        
+        .shelf-cell.occupied {
+            background: #ffffff;
+            border: 2px solid #d0d0d0;
+        }
+        
+        .shelf-cell.occupied:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .shelf-cell.enlarged {
+            transform: scale(1.5) !important;
+            z-index: 1000;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+        
+        .product-in-cell {
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+        }
+        
+        .product-in-cell .product-image {
+            width: 100%;
+            max-width: 100%;
+            height: 100%;
+            min-height: 80px;
+            max-height: 90px;
+            object-fit: contain;
+            border-radius: 6px 6px 0 0;
+            background: #ffffff;
+            padding: 0;
+            box-shadow: none;
+            flex-shrink: 0;
+            display: block;
+        }
+        
+        .product-in-cell .no-image {
+            font-size: 40px;
+            opacity: 0.3;
+            color: #9e9e9e;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f5f5f5;
+            border-radius: 6px 6px 0 0;
+        }
+        
+        .product-in-cell .name {
+            font-weight: 600;
+            font-size: 10px;
+            margin: 6px 8px 4px;
+            text-shadow: none;
+            color: #333;
+            line-height: 1.3;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+        
+        .product-in-cell .price {
+            font-size: 11px;
+            font-weight: bold;
+            opacity: 1;
+            color: #000;
+            background: transparent;
+            padding: 4px 8px;
+            border-radius: 0;
+            margin-top: auto;
+        }
+        
+        @media (min-width: 768px) {
+            .gondola {
+                padding: 15px;
+                gap: 8px;
+            }
+            
+            .shelf-cell {
+                min-height: 160px;
+            }
+            
+            .product-in-cell .product-image {
+                max-height: 110px;
+            }
+            
+            .product-in-cell .name {
+                font-size: 11px;
+                margin: 8px 10px 6px;
+            }
+            
+            .product-in-cell .price {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="client-header">
+            <h1>
+                📍 Estantería Nro
+                <span class="gondola-selector">
+                    <select id="gondolaSelector" aria-label="Seleccionar estantería">
+                        <!-- Se generará dinámicamente -->
+                    </select>
+                </span>
+            </h1>
+            <img src="logo.png" alt="Logo" class="client-header-logo">
+        </header>
+
+        <section class="gondola-container">
+            <div id="gondola" class="gondola">
+                <!-- El grid se generará dinámicamente -->
+            </div>
+        </section>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="config.js"></script>
+    <script src="google-sheets.js"></script>
+    
+    <script>
+        // ========================================
+        // VISTA CLIENTE MINIMALISTA (SOLO LECTURA)
+        // ========================================
+        
+        class ClienteGondolaView {
+            constructor() {
+                this.gondolaId = this.getGondolaIdFromURL();
+                
+                const gondolaSettings = window.CONFIG.gondola.gondolaSettings[this.gondolaId] || {
+                    name: `Góndola ${this.gondolaId}`,
+                    columns: window.CONFIG.gondola.defaultColumns,
+                    shelves: window.CONFIG.gondola.defaultShelves
+                };
+                
+                this.gondolaName = gondolaSettings.name;
+                this.columns = gondolaSettings.columns;
+                this.shelves = gondolaSettings.shelves;
+                this.gondolaData = {};
+                
+                this.init();
+            }
+            
+            getGondolaIdFromURL() {
+                const urlParams = new URLSearchParams(window.location.search);
+                return parseInt(urlParams.get('gondola')) || 1;
+            }
+            
+            async init() {
+                console.log(`👁️ Vista Cliente - ${this.gondolaName}`);
+                
+                document.title = `Estantería ${this.gondolaId}`;
+                this.renderGondolaSelector();
+                
+                await this.loadProducts();
+                this.createGondola();
+                await this.loadGondolaFromFirebase();
+                
+                console.log("✅ Vista cliente lista");
+            }
+            
+            renderGondolaSelector() {
+                const selector = document.getElementById('gondolaSelector');
+                const totalGondolas = window.CONFIG.gondola.totalGondolas;
+                
+                selector.innerHTML = '';
+                for (let i = 1; i <= totalGondolas; i++) {
+                    const option = document.createElement('option');
+                    option.value = i;
+                    option.textContent = i;
+                    if (i === this.gondolaId) {
+                        option.selected = true;
+                    }
+                    selector.appendChild(option);
+                }
+                
+                // Evento de cambio
+                selector.addEventListener('change', (e) => {
+                    const newGondolaId = parseInt(e.target.value);
+                    window.location.href = `?gondola=${newGondolaId}`;
+                });
+            }
+            
+            async loadProducts() {
+                try {
+                    await window.GoogleSheets.loadProducts();
+                } catch (error) {
+                    console.error("Error al cargar productos:", error);
+                }
+            }
+            
+            createGondola() {
+                const gondolaElement = document.getElementById('gondola');
+                gondolaElement.innerHTML = '';
+                gondolaElement.style.gridTemplateColumns = `repeat(${this.columns}, 1fr)`;
+                
+                for (let shelf = 1; shelf <= this.shelves; shelf++) {
+                    for (let col = 1; col <= this.columns; col++) {
+                        const position = `C${col}-E${shelf}`;
+                        const cell = document.createElement('div');
+                        cell.className = 'shelf-cell';
+                        cell.dataset.position = position;
+                        
+                        // Agregar evento click para agrandar
+                        cell.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            
+                            if (cell.classList.contains('occupied')) {
+                                // Remover enlarged de todas las celdas
+                                document.querySelectorAll('.shelf-cell.enlarged').forEach(c => {
+                                    c.classList.remove('enlarged');
+                                });
+                                
+                                // Agregar enlarged a la celda clickeada
+                                cell.classList.add('enlarged');
+                            }
+                        });
+                        
+                        gondolaElement.appendChild(cell);
+                    }
+                }
+                
+                // Evento global para cerrar el zoom al hacer click fuera
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('.shelf-cell')) {
+                        document.querySelectorAll('.shelf-cell.enlarged').forEach(c => {
+                            c.classList.remove('enlarged');
+                        });
+                    }
+                });
+            }
+            
+            async loadGondolaFromFirebase() {
+                try {
+                    const firebasePath = window.CONFIG.gondola.getFirebasePath(this.gondolaId);
+                    const ref = window.CONFIG.database.ref(firebasePath);
+                    
+                    // Cargar datos una sola vez (sin listener en tiempo real)
+                    const snapshot = await ref.once('value');
+                    const data = snapshot.val();
+                    
+                    if (data) {
+                        this.gondolaData = {};
+                        
+                        Object.entries(data).forEach(([position, info]) => {
+                            if (info && info.productId) {
+                                this.gondolaData[position] = info.productId;
+                            }
+                        });
+                        
+                        // Actualizar todas las celdas
+                        document.querySelectorAll('.shelf-cell').forEach(cell => {
+                            const position = cell.dataset.position;
+                            this.updateCellDisplay(position);
+                        });
+                        
+                        // Ocultar filas vacías
+                        this.hideEmptyRows();
+                        // Ocultar columnas vacías y ajustar grid
+                        this.hideEmptyColumns();
+                        
+                        console.log(`✅ Estantería ${this.gondolaId} cargada`);
+                    } else {
+                        // Si no hay datos, ocultar todas las filas
+                        this.hideEmptyRows();
+                        this.hideEmptyColumns();
+                    }
+                } catch (error) {
+                    console.error("Error al cargar desde Firebase:", error);
+                }
+            }
+            
+            hideEmptyRows() {
+                const gondola = document.getElementById('gondola');
+                
+                // Agrupar celdas por estante (fila)
+                for (let shelf = 1; shelf <= this.shelves; shelf++) {
+                    let hasProducts = false;
+                    
+                    // Verificar si el estante tiene algún producto
+                    for (let col = 1; col <= this.columns; col++) {
+                        const position = `C${col}-E${shelf}`;
+                        if (this.gondolaData[position]) {
+                            hasProducts = true;
+                            break;
+                        }
+                    }
+                    
+                    // Mostrar u ocultar todas las celdas del estante
+                    for (let col = 1; col <= this.columns; col++) {
+                        const position = `C${col}-E${shelf}`;
+                        const cell = document.querySelector(`[data-position="${position}"]`);
+                        if (cell) {
+                            cell.style.display = hasProducts ? 'flex' : 'none';
+                        }
+                    }
+                }
+            }
+            
+            hideEmptyColumns() {
+                const gondola = document.getElementById('gondola');
+                const emptyColumns = [];
+                
+                // Verificar cada columna para ver si tiene productos
+                for (let col = 1; col <= this.columns; col++) {
+                    let hasProducts = false;
+                    
+                    // Verificar si la columna tiene algún producto en cualquier estante
+                    for (let shelf = 1; shelf <= this.shelves; shelf++) {
+                        const position = `C${col}-E${shelf}`;
+                        if (this.gondolaData[position]) {
+                            hasProducts = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!hasProducts) {
+                        emptyColumns.push(col);
+                    }
+                }
+                
+                // Ocultar celdas de columnas vacías
+                emptyColumns.forEach(col => {
+                    for (let shelf = 1; shelf <= this.shelves; shelf++) {
+                        const position = `C${col}-E${shelf}`;
+                        const cell = document.querySelector(`[data-position="${position}"]`);
+                        if (cell) {
+                            cell.style.display = 'none';
+                        }
+                    }
+                });
+                
+                // Ajustar el grid para que las columnas visibles ocupen todo el ancho
+                const visibleColumns = this.columns - emptyColumns.length;
+                if (visibleColumns > 0) {
+                    gondola.style.gridTemplateColumns = `repeat(${visibleColumns}, 1fr)`;
+                } else {
+                    gondola.style.gridTemplateColumns = `repeat(${this.columns}, 1fr)`;
+                }
+            }
+            
+            updateCellDisplay(position) {
+                const cell = document.querySelector(`[data-position="${position}"]`);
+                const productId = this.gondolaData[position];
+                
+                if (productId) {
+                    const product = window.GoogleSheets.getProductById(productId);
+                    if (product) {
+                        cell.classList.add('occupied');
+                        const imageUrl = product.imageUrl ? product.imageUrl.split(',')[0].trim() : '';
+                        cell.innerHTML = `
+                            <div class="product-in-cell">
+                                ${imageUrl ? `<img src="${imageUrl}" alt="${product.name}" class="product-image">` : '<img src="no-disponible.png" alt="Sin imagen" class="product-image">'}
+                                <div class="name">${product.name}</div>
+                                <div class="price">${window.GoogleSheets.formatPrice(product.price)}</div>
+                            </div>
+                        `;
+                    }
+                } else {
+                    cell.classList.remove('occupied');
+                    cell.innerHTML = '';
+                }
+            }
+        }
+        
+        // Inicializar vista cliente
+        document.addEventListener('DOMContentLoaded', () => {
+            window.clientView = new ClienteGondolaView();
+            
+            // Cerrar página automáticamente después de 30 minutos
+            setTimeout(() => {
+                console.log('⏰ Tiempo de sesión agotado. Cerrando página...');
+                
+                // Intentar cerrar la ventana
+                window.close();
+                
+                // Si window.close() no funciona (por restricciones del navegador),
+                // redirigir a una página en blanco
+                setTimeout(() => {
+                    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:Arial;font-size:1.2em;color:#666;">Sesión finalizada</div>';
+                    window.location.href = 'about:blank';
+                }, 100);
+            }, 1800000); // 30 minutos = 1,800,000 milisegundos
+        });
+    </script>
+</body>
+</html>
