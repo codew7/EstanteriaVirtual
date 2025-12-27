@@ -254,43 +254,57 @@
         
         .gondola-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(9, 70px);
+            grid-template-rows: repeat(9, 70px);
+            gap: 5px;
             margin-bottom: 20px;
+            justify-content: center;
+        }
+        
+        .gondola-cell {
+            width: 70px;
+            height: 70px;
+            background: #fafafa;
+            border: 2px dashed #e0e0e0;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .gondola-cell.drag-over {
+            background: #e3f2fd;
+            border-color: #42a5f5;
+            border-style: solid;
         }
         
         .gondola-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            cursor: pointer;
+            background: #e8eaf6;
+            color: #5c6bc0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            cursor: grab;
             transition: all 0.3s;
-            border: 3px solid transparent;
+            border: 2px solid #c5cae9;
+            font-weight: bold;
+            font-size: 1.1em;
         }
         
         .gondola-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
-            border-color: #fff;
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            background: #d1d5f0;
         }
         
-        .gondola-card h3 {
-            margin: 0 0 10px 0;
-            font-size: 1.2em;
-        }
-        
-        .gondola-card p {
-            margin: 0;
-            font-size: 0.9em;
-            opacity: 0.9;
-        }
-        
-        @media (max-width: 600px) {
-            .gondola-grid {
-                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            }
+        .gondola-card.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
         }
     </style>
 </head>
@@ -396,6 +410,104 @@
     
     <!-- Script del selector de góndola -->
     <script>
+        // Sistema de posiciones de estanterías
+        const GRID_SIZE = 9; // Cuadrícula 9x9
+        let gondolaPositions = {}; // {gondolaId: {row, col}}
+        
+        // Cargar posiciones desde Firebase o localStorage
+        async function loadGondolaPositions() {
+            const totalGondolas = window.CONFIG.gondola.totalGondolas;
+            
+            try {
+                // Intentar cargar desde Firebase primero
+                const ref = window.CONFIG.database.ref('gondolaLayout');
+                const snapshot = await ref.once('value');
+                const firebaseData = snapshot.val();
+                
+                if (firebaseData) {
+                    gondolaPositions = firebaseData;
+                    console.log('✅ Posiciones de estanterías cargadas desde Firebase');
+                } else {
+                    // Si no hay datos en Firebase, intentar localStorage
+                    const saved = localStorage.getItem('gondolaPositions');
+                    if (saved) {
+                        gondolaPositions = JSON.parse(saved);
+                        console.log('✅ Posiciones de estanterías cargadas desde localStorage');
+                    }
+                }
+            } catch (error) {
+                console.error('Error al cargar desde Firebase, usando localStorage:', error);
+                const saved = localStorage.getItem('gondolaPositions');
+                if (saved) {
+                    gondolaPositions = JSON.parse(saved);
+                }
+            }
+            
+            // Si no hay datos guardados, crear posiciones por defecto
+            if (Object.keys(gondolaPositions).length === 0) {
+                for (let i = 1; i <= totalGondolas; i++) {
+                    const index = i - 1;
+                    gondolaPositions[i] = {
+                        row: Math.floor(index / GRID_SIZE),
+                        col: index % GRID_SIZE
+                    };
+                }
+                await saveGondolaPositions();
+                return;
+            }
+            
+            // Verificar y reubicar estanterías fuera del rango
+            const occupiedPositions = new Set();
+            const outOfRangeGondolas = [];
+            
+            // Identificar estanterías fuera del rango y posiciones ocupadas
+            for (let i = 1; i <= totalGondolas; i++) {
+                if (gondolaPositions[i]) {
+                    const pos = gondolaPositions[i];
+                    if (pos.row >= GRID_SIZE || pos.col >= GRID_SIZE || pos.row < 0 || pos.col < 0) {
+                        outOfRangeGondolas.push(i);
+                    } else {
+                        occupiedPositions.add(`${pos.row},${pos.col}`);
+                    }
+                } else {
+                    outOfRangeGondolas.push(i);
+                }
+            }
+            
+            // Reubicar estanterías fuera del rango en posiciones disponibles
+            if (outOfRangeGondolas.length > 0) {
+                for (const gondolaId of outOfRangeGondolas) {
+                    let placed = false;
+                    for (let row = 0; row < GRID_SIZE && !placed; row++) {
+                        for (let col = 0; col < GRID_SIZE && !placed; col++) {
+                            const key = `${row},${col}`;
+                            if (!occupiedPositions.has(key)) {
+                                gondolaPositions[gondolaId] = { row, col };
+                                occupiedPositions.add(key);
+                                placed = true;
+                            }
+                        }
+                    }
+                }
+                await saveGondolaPositions();
+            }
+        }
+        
+        // Guardar posiciones en localStorage y Firebase
+        async function saveGondolaPositions() {
+            // Guardar en localStorage
+            localStorage.setItem('gondolaPositions', JSON.stringify(gondolaPositions));
+            
+            // Guardar en Firebase
+            try {
+                const ref = window.CONFIG.database.ref('gondolaLayout');
+                await ref.set(gondolaPositions);
+                console.log('💾 Posiciones de estanterías guardadas en Firebase');
+            } catch (error) {
+                console.error('Error al guardar posiciones en Firebase:', error);
+            }
+        }
+        
         // Mostrar selector de góndola si no hay parámetro en URL
         window.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
@@ -413,37 +525,146 @@
             });
         });
         
-        function showGondolaSelector() {
+        let draggedGondolaId = null;
+        
+        async function showGondolaSelector() {
             const selector = document.getElementById('gondolaSelector');
             const grid = document.getElementById('gondolaGrid');
             
             selector.classList.remove('hidden');
             
-            // Generar cards de góndolas
-            if (grid.children.length === 0) {
-                const totalGondolas = window.CONFIG.gondola.totalGondolas;
-                const gondolaSettings = window.CONFIG.gondola.gondolaSettings;
-                
-                for (let i = 1; i <= totalGondolas; i++) {
-                    const settings = gondolaSettings[i] || { 
-                        name: `Góndola ${i}`, 
-                        columns: 5, 
-                        shelves: 6 
-                    };
+            // Agregar evento para cerrar al hacer click fuera
+            selector.addEventListener('click', (e) => {
+                if (e.target === selector) {
+                    selector.classList.add('hidden');
+                }
+            });
+            
+            // Cargar posiciones
+            await loadGondolaPositions();
+            
+            // Generar cuadrícula 9x9
+            grid.innerHTML = '';
+            
+            // Crear 81 casillas (9x9)
+            for (let row = 0; row < GRID_SIZE; row++) {
+                for (let col = 0; col < GRID_SIZE; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'gondola-cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
                     
-                    const card = document.createElement('div');
-                    card.className = 'gondola-card';
-                    card.innerHTML = `
-                        <h3>${i}</h3>
-                    `;
+                    // Buscar si hay una estantería en esta posición
+                    const gondolaId = findGondolaAtPosition(row, col);
                     
-                    card.addEventListener('click', () => {
-                        window.location.href = `?gondola=${i}`;
-                    });
+                    if (gondolaId) {
+                        const card = document.createElement('div');
+                        card.className = 'gondola-card';
+                        card.draggable = true;
+                        card.dataset.gondolaId = gondolaId;
+                        card.textContent = gondolaId;
+                        
+                        // Eventos de arrastre
+                        card.addEventListener('dragstart', handleDragStart);
+                        card.addEventListener('dragend', handleDragEnd);
+                        
+                        // Click para seleccionar
+                        card.addEventListener('click', (e) => {
+                            if (!card.classList.contains('dragging')) {
+                                window.location.href = `?gondola=${gondolaId}`;
+                            }
+                        });
+                        
+                        cell.appendChild(card);
+                    }
                     
-                    grid.appendChild(card);
+                    // Eventos de drop en la celda
+                    cell.addEventListener('dragover', handleDragOver);
+                    cell.addEventListener('dragleave', handleDragLeave);
+                    cell.addEventListener('drop', handleDrop);
+                    
+                    grid.appendChild(cell);
                 }
             }
+        }
+        
+        function findGondolaAtPosition(row, col) {
+            for (const [id, pos] of Object.entries(gondolaPositions)) {
+                if (pos.row === row && pos.col === col) {
+                    return id;
+                }
+            }
+            return null;
+        }
+        
+        function handleDragStart(e) {
+            draggedGondolaId = e.target.dataset.gondolaId;
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+        
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            draggedGondolaId = null;
+        }
+        
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            
+            // Permitir arrastrar sobre cualquier celda (vacía u ocupada)
+            const cell = e.currentTarget;
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+            const existingGondola = findGondolaAtPosition(row, col);
+            
+            // Resaltar siempre, excepto si es la misma estantería
+            if (!existingGondola || existingGondola !== draggedGondolaId) {
+                cell.classList.add('drag-over');
+            }
+        }
+        
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            const cell = e.currentTarget;
+            cell.classList.remove('drag-over');
+            
+            if (!draggedGondolaId) return;
+            
+            const newRow = parseInt(cell.dataset.row);
+            const newCol = parseInt(cell.dataset.col);
+            const existingGondola = findGondolaAtPosition(newRow, newCol);
+            
+            // Si la celda está ocupada por otra estantería, intercambiar posiciones
+            if (existingGondola && existingGondola !== draggedGondolaId) {
+                // Obtener posición actual de la estantería arrastrada
+                const draggedPos = gondolaPositions[draggedGondolaId];
+                
+                // Intercambiar posiciones
+                gondolaPositions[existingGondola] = {
+                    row: draggedPos.row,
+                    col: draggedPos.col
+                };
+                gondolaPositions[draggedGondolaId] = {
+                    row: newRow,
+                    col: newCol
+                };
+            } else if (!existingGondola) {
+                // Celda vacía, solo mover
+                gondolaPositions[draggedGondolaId] = {
+                    row: newRow,
+                    col: newCol
+                };
+            }
+            // Si es la misma posición, no hacer nada
+            
+            // Guardar y re-renderizar
+            saveGondolaPositions();
+            showGondolaSelector();
         }
     </script>
     
