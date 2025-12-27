@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Góndola - Supermercado</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Vista minimalista para administrador */
+        body {
+            padding: 5px;
+            margin: 0;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0;
+        }
+        
+        header {
+            background: #ffffff;
+            color: #333;
+            text-align: center;
+            padding: 15px 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        header h1 {
+            color: #333;
+            font-size: 1.3em;
+            margin: 0 0 10px 0;
+        }
+        
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .header-controls button {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: 2px solid #e0e0e0;
+            background: #f5f5f5;
+            color: #333;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+        
+        .header-controls button:hover {
+            border-color: #bdbdbd;
+            background: #eeeeee;
+        }
+        
+        .btn-danger {
+            background: #ffebee !important;
+            border-color: #ef5350 !important;
+            color: #c62828 !important;
+        }
+        
+        .btn-danger:hover {
+            background: #ffcdd2 !important;
+        }
+        
+        .btn-secondary {
+            background: #e3f2fd !important;
+            border-color: #42a5f5 !important;
+            color: #1565c0 !important;
+        }
+        
+        .btn-secondary:hover {
+            background: #bbdefb !important;
+        }
+        
+        /* Modal de búsqueda de productos */
+        #searchModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        #searchModal.active {
+            display: flex;
+        }
+        
+        .search-modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .search-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .search-modal-header h3 {
+            color: #333;
+            margin: 0;
+            font-size: 1.2em;
+        }
+        
+        .search-modal-close {
+            background: #f5f5f5;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+        
+        .search-modal-close:hover {
+            background: #e0e0e0;
+            color: #333;
+        }
+        
+        .search-modal-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            margin-bottom: 15px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .search-modal-input:focus {
+            outline: none;
+            border-color: #42a5f5;
+        }
+        
+        .search-modal-results {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+        
+        .search-result-item {
+            padding: 12px;
+            border: 2px solid #f0f0f0;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+        
+        .search-result-item:hover {
+            border-color: #42a5f5;
+            background: #e3f2fd;
+            transform: translateX(5px);
+        }
+        
+        .search-result-item .name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        
+        .search-result-item .details {
+            font-size: 0.85em;
+            color: #666;
+        }
+        
+        .search-result-item .price {
+            font-weight: bold;
+            color: #4caf50;
+            margin-top: 4px;
+        }
+        
+        .search-no-results {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+        
+        .gondola-container {
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .gondola-container h2 {
+            color: #333;
+            font-size: 1.2em;
+            margin: 0 0 15px 0;
+            text-align: center;
+        }
+        
+        /* Estilos para el selector de góndola */
+        #gondolaSelector {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            backdrop-filter: blur(5px);
+        }
+        
+        #gondolaSelector.hidden {
+            display: none;
+        }
+        
+        .selector-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .selector-content h2 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .gondola-grid {
+            display: grid;
+            grid-template-columns: repeat(9, 70px);
+            grid-template-rows: repeat(9, 70px);
+            gap: 5px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+        
+        .gondola-cell {
+            width: 70px;
+            height: 70px;
+            background: #fafafa;
+            border: 2px dashed #e0e0e0;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .gondola-cell.drag-over {
+            background: #e3f2fd;
+            border-color: #42a5f5;
+            border-style: solid;
+        }
+        
+        .gondola-card {
+            background: #e8eaf6;
+            color: #5c6bc0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            cursor: grab;
+            transition: all 0.3s;
+            border: 2px solid #c5cae9;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        
+        .gondola-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            background: #d1d5f0;
+        }
+        
+        .gondola-card.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+    </style>
+</head>
+<body>
+    <!-- Selector de Góndola -->
+    <div id="gondolaSelector">
+        <div class="selector-content">
+            <h2>🏪 Selecciona una Estanteria</h2>
+            <div id="gondolaGrid" class="gondola-grid">
+                <!-- Se generará dinámicamente -->
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>🏪 Gestión de Ubicación de Productos</h1>
+            <div class="header-controls">
+                <button id="changeGondolaBtn" class="btn-secondary">Cambiar Góndola</button>
+                <button id="clearAllBtn" class="btn-danger">Limpiar Góndola</button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <!-- Panel de productos -->
+            <aside class="products-panel">
+                <div class="search-container">
+                    <h2>Productos Disponibles</h2>
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        placeholder="Buscar productos..." 
+                        class="search-input"
+                    >
+                    <select id="categoryFilter" class="category-filter">
+                        <option value="">Todas las categorías</option>
+                    </select>
+                </div>
+
+                <div id="loadingProducts" class="loading">
+                    Cargando productos...
+                </div>
+
+                <div id="productsList" class="products-list">
+                    <!-- Los productos se cargarán dinámicamente aquí -->
+                </div>
+
+                <div class="stats">
+                    <h3>Estadísticas</h3>
+                    <div id="stats">
+                        <p>Total de productos: <span id="totalProducts">0</span></p>
+                        <p>Productos en góndola: <span id="productsInGondola">0</span></p>
+                        <p>Espacios disponibles: <span id="availableSpaces">0</span></p>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Góndola -->
+            <section class="gondola-container">
+                <h2 id="gondolaTitle">Estantería Nro 1</h2>
+                
+                <div id="gondola" class="gondola">
+                    <!-- El grid se generará dinámicamente -->
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Modal de búsqueda para seleccionar producto -->
+    <div id="searchModal">
+        <div class="search-modal-content">
+            <div class="search-modal-header">
+                <h3>🔍 Seleccionar Producto</h3>
+                <button class="search-modal-close" onclick="closeSearchModal()">×</button>
+            </div>
+            <input 
+                type="text" 
+                id="searchModalInput" 
+                class="search-modal-input" 
+                placeholder="Buscar por nombre o código..."
+            >
+            <div id="searchModalResults" class="search-modal-results">
+                <!-- Los resultados se cargarán dinámicamente -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para detalles del producto -->
+    <div id="productModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modalProductName"></h2>
+            <div id="modalProductDetails"></div>
+            <button id="removeProductBtn" class="btn-danger">Quitar de la Góndola</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="config.js"></script>
+    <script src="google-sheets.js"></script>
+    
+    <!-- Script del selector de góndola -->
+    <script>
+        // Sistema de posiciones de estanterías
+        const GRID_SIZE = 9; // Cuadrícula 9x9
+        let gondolaPositions = {}; // {gondolaId: {row, col}}
+        
+        // Cargar posiciones desde Firebase o localStorage
+        async function loadGondolaPositions() {
+            const totalGondolas = window.CONFIG.gondola.totalGondolas;
+            
+            try {
+                // Intentar cargar desde Firebase primero
+                const ref = window.CONFIG.database.ref('gondolaLayout');
+                const snapshot = await ref.once('value');
+                const firebaseData = snapshot.val();
+                
+                if (firebaseData) {
+                    gondolaPositions = firebaseData;
+                    console.log('✅ Posiciones de estanterías cargadas desde Firebase');
+                } else {
+                    // Si no hay datos en Firebase, intentar localStorage
+                    const saved = localStorage.getItem('gondolaPositions');
+                    if (saved) {
+                        gondolaPositions = JSON.parse(saved);
+                        console.log('✅ Posiciones de estanterías cargadas desde localStorage');
+                    }
+                }
+            } catch (error) {
+                console.error('Error al cargar desde Firebase, usando localStorage:', error);
+                const saved = localStorage.getItem('gondolaPositions');
+                if (saved) {
+                    gondolaPositions = JSON.parse(saved);
+                }
+            }
+            
+            // Si no hay datos guardados, crear posiciones por defecto
+            if (Object.keys(gondolaPositions).length === 0) {
+                for (let i = 1; i <= totalGondolas; i++) {
+                    const index = i - 1;
+                    gondolaPositions[i] = {
+                        row: Math.floor(index / GRID_SIZE),
+                        col: index % GRID_SIZE
+                    };
+                }
+                await saveGondolaPositions();
+                return;
+            }
+            
+            // Verificar y reubicar estanterías fuera del rango
+            const occupiedPositions = new Set();
+            const outOfRangeGondolas = [];
+            
+            // Identificar estanterías fuera del rango y posiciones ocupadas
+            for (let i = 1; i <= totalGondolas; i++) {
+                if (gondolaPositions[i]) {
+                    const pos = gondolaPositions[i];
+                    if (pos.row >= GRID_SIZE || pos.col >= GRID_SIZE || pos.row < 0 || pos.col < 0) {
+                        outOfRangeGondolas.push(i);
+                    } else {
+                        occupiedPositions.add(`${pos.row},${pos.col}`);
+                    }
+                } else {
+                    outOfRangeGondolas.push(i);
+                }
+            }
+            
+            // Reubicar estanterías fuera del rango en posiciones disponibles
+            if (outOfRangeGondolas.length > 0) {
+                for (const gondolaId of outOfRangeGondolas) {
+                    let placed = false;
+                    for (let row = 0; row < GRID_SIZE && !placed; row++) {
+                        for (let col = 0; col < GRID_SIZE && !placed; col++) {
+                            const key = `${row},${col}`;
+                            if (!occupiedPositions.has(key)) {
+                                gondolaPositions[gondolaId] = { row, col };
+                                occupiedPositions.add(key);
+                                placed = true;
+                            }
+                        }
+                    }
+                }
+                await saveGondolaPositions();
+            }
+        }
+        
+        // Guardar posiciones en localStorage y Firebase
+        async function saveGondolaPositions() {
+            // Guardar en localStorage
+            localStorage.setItem('gondolaPositions', JSON.stringify(gondolaPositions));
+            
+            // Guardar en Firebase
+            try {
+                const ref = window.CONFIG.database.ref('gondolaLayout');
+                await ref.set(gondolaPositions);
+                console.log('💾 Posiciones de estanterías guardadas en Firebase');
+            } catch (error) {
+                console.error('Error al guardar posiciones en Firebase:', error);
+            }
+        }
+        
+        // Mostrar selector de góndola si no hay parámetro en URL
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const gondolaId = urlParams.get('gondola');
+            
+            if (!gondolaId) {
+                showGondolaSelector();
+            } else {
+                document.getElementById('gondolaSelector').classList.add('hidden');
+            }
+            
+            // Botón para cambiar de góndola
+            document.getElementById('changeGondolaBtn')?.addEventListener('click', () => {
+                showGondolaSelector();
+            });
+        });
+        
+        let draggedGondolaId = null;
+        
+        async function showGondolaSelector() {
+            const selector = document.getElementById('gondolaSelector');
+            const grid = document.getElementById('gondolaGrid');
+            
+            selector.classList.remove('hidden');
+            
+            // Agregar evento para cerrar al hacer click fuera
+            selector.addEventListener('click', (e) => {
+                if (e.target === selector) {
+                    selector.classList.add('hidden');
+                }
+            });
+            
+            // Cargar posiciones
+            await loadGondolaPositions();
+            
+            // Generar cuadrícula 9x9
+            grid.innerHTML = '';
+            
+            // Crear 81 casillas (9x9)
+            for (let row = 0; row < GRID_SIZE; row++) {
+                for (let col = 0; col < GRID_SIZE; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'gondola-cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    
+                    // Buscar si hay una estantería en esta posición
+                    const gondolaId = findGondolaAtPosition(row, col);
+                    
+                    if (gondolaId) {
+                        const card = document.createElement('div');
+                        card.className = 'gondola-card';
+                        card.draggable = true;
+                        card.dataset.gondolaId = gondolaId;
+                        card.textContent = gondolaId;
+                        
+                        // Eventos de arrastre
+                        card.addEventListener('dragstart', handleDragStart);
+                        card.addEventListener('dragend', handleDragEnd);
+                        
+                        // Click para seleccionar
+                        card.addEventListener('click', (e) => {
+                            if (!card.classList.contains('dragging')) {
+                                window.location.href = `?gondola=${gondolaId}`;
+                            }
+                        });
+                        
+                        cell.appendChild(card);
+                    }
+                    
+                    // Eventos de drop en la celda
+                    cell.addEventListener('dragover', handleDragOver);
+                    cell.addEventListener('dragleave', handleDragLeave);
+                    cell.addEventListener('drop', handleDrop);
+                    
+                    grid.appendChild(cell);
+                }
+            }
+        }
+        
+        function findGondolaAtPosition(row, col) {
+            for (const [id, pos] of Object.entries(gondolaPositions)) {
+                if (pos.row === row && pos.col === col) {
+                    return id;
+                }
+            }
+            return null;
+        }
+        
+        function handleDragStart(e) {
+            draggedGondolaId = e.target.dataset.gondolaId;
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+        
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            draggedGondolaId = null;
+        }
+        
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            
+            // Permitir arrastrar sobre cualquier celda (vacía u ocupada)
+            const cell = e.currentTarget;
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+            const existingGondola = findGondolaAtPosition(row, col);
+            
+            // Resaltar siempre, excepto si es la misma estantería
+            if (!existingGondola || existingGondola !== draggedGondolaId) {
+                cell.classList.add('drag-over');
+            }
+        }
+        
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            const cell = e.currentTarget;
+            cell.classList.remove('drag-over');
+            
+            if (!draggedGondolaId) return;
+            
+            const newRow = parseInt(cell.dataset.row);
+            const newCol = parseInt(cell.dataset.col);
+            const existingGondola = findGondolaAtPosition(newRow, newCol);
+            
+            // Si la celda está ocupada por otra estantería, intercambiar posiciones
+            if (existingGondola && existingGondola !== draggedGondolaId) {
+                // Obtener posición actual de la estantería arrastrada
+                const draggedPos = gondolaPositions[draggedGondolaId];
+                
+                // Intercambiar posiciones
+                gondolaPositions[existingGondola] = {
+                    row: draggedPos.row,
+                    col: draggedPos.col
+                };
+                gondolaPositions[draggedGondolaId] = {
+                    row: newRow,
+                    col: newCol
+                };
+            } else if (!existingGondola) {
+                // Celda vacía, solo mover
+                gondolaPositions[draggedGondolaId] = {
+                    row: newRow,
+                    col: newCol
+                };
+            }
+            // Si es la misma posición, no hacer nada
+            
+            // Guardar y re-renderizar
+            saveGondolaPositions();
+            showGondolaSelector();
+        }
+    </script>
+    
+    <script>
+        // Función global para cerrar el modal de búsqueda
+        function closeSearchModal() {
+            const modal = document.getElementById('searchModal');
+            modal.classList.remove('active');
+        }
+        
+        // Cerrar modal al hacer click fuera
+        document.addEventListener('DOMContentLoaded', () => {
+            const modal = document.getElementById('searchModal');
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeSearchModal();
+                }
+            });
+        });
+    </script>
+    
+    <script src="app.js"></script>
+</body>
+</html>

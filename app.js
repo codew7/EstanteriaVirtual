@@ -20,6 +20,7 @@ class GondolaApp {
         this.gondolaData = {}; // {position: productId}
         this.productsInGondola = new Set();
         this.draggedProduct = null;
+        this.draggedFromPosition = null; // Para rastrear de dónde viene el producto
         this.selectedPosition = null; // Para el modal de búsqueda
         
         this.init();
@@ -128,7 +129,6 @@ class GondolaApp {
                     </div>
                     <div class="product-price">
                         ${window.GoogleSheets.formatPrice(product.price)}
-                        ${product.priceBox ? ` | Caja: ${window.GoogleSheets.formatPrice(product.priceBox)}` : ''}
                     </div>
                     ${product.stock !== undefined ? `<div class="product-details" style="color: ${product.stock > 0 ? '#2ecc71' : '#e74c3c'};">Stock: ${product.stock}</div>` : ''}
                     ${inGondola ? `<div class="product-details" style="color: #4caf50; font-weight: bold;">📍 ${position}</div>` : ''}
@@ -245,22 +245,36 @@ class GondolaApp {
      * Colocar producto en la góndola
      */
     async placeProductInGondola(productId, position) {
-        // Verificar si el producto ya está en otra posición
-        const oldPosition = this.getProductPosition(productId);
-        if (oldPosition) {
-            delete this.gondolaData[oldPosition];
-        }
+        // Si el producto viene de otra celda de la góndola, obtener la posición anterior
+        const oldPosition = this.draggedFromPosition || this.getProductPosition(productId);
         
-        // Verificar si la posición está ocupada
-        if (this.gondolaData[position]) {
-            const confirm = window.confirm(`La posición ${position} está ocupada. ¿Deseas reemplazar el producto?`);
-            if (!confirm) return;
+        // Verificar si la posición está ocupada por otro producto
+        if (this.gondolaData[position] && this.gondolaData[position] !== productId) {
+            const existingProductId = this.gondolaData[position];
             
-            const oldProductId = this.gondolaData[position];
-            this.productsInGondola.delete(oldProductId);
+            // Si viene desde otra celda, intercambiar posiciones
+            if (oldPosition && oldPosition !== position) {
+                // Intercambiar: poner el producto existente en la posición anterior
+                this.gondolaData[oldPosition] = existingProductId;
+                await this.saveToFirebase(oldPosition, existingProductId);
+                this.updateCellDisplay(oldPosition);
+                
+                console.log(`🔄 Intercambio: ${existingProductId} movido a ${oldPosition}`);
+            } else {
+                // Si viene desde el panel, preguntar si desea reemplazar
+                const confirm = window.confirm(`La posición ${position} está ocupada. ¿Deseas reemplazar el producto?`);
+                if (!confirm) return;
+                
+                this.productsInGondola.delete(existingProductId);
+            }
+        } else if (oldPosition && oldPosition !== position) {
+            // Mover a celda vacía, limpiar la posición anterior
+            delete this.gondolaData[oldPosition];
+            await this.saveToFirebase(oldPosition, null);
+            this.updateCellDisplay(oldPosition);
         }
         
-        // Colocar producto
+        // Colocar producto en la nueva posición
         this.gondolaData[position] = productId;
         this.productsInGondola.add(productId);
         
@@ -297,10 +311,29 @@ class GondolaApp {
                         <div class="price">${window.GoogleSheets.formatPrice(product.price)}</div>
                     </div>
                 `;
+                
+                // Hacer la celda ocupada arrastrable
+                cell.setAttribute('draggable', 'true');
+                
+                // Agregar eventos de drag
+                cell.addEventListener('dragstart', (e) => {
+                    this.draggedProduct = productId;
+                    this.draggedFromPosition = position;
+                    cell.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', productId);
+                });
+                
+                cell.addEventListener('dragend', (e) => {
+                    cell.classList.remove('dragging');
+                    this.draggedProduct = null;
+                    this.draggedFromPosition = null;
+                });
             }
         } else {
             cell.classList.remove('occupied');
             cell.innerHTML = '';
+            cell.removeAttribute('draggable');
         }
     }
 
@@ -401,7 +434,6 @@ class GondolaApp {
             <p><strong>ID:</strong> ${product.id}</p>
             <p><strong>Categoría:</strong> ${product.category}</p>
             <p><strong>Precio Unitario:</strong> ${window.GoogleSheets.formatPrice(product.price)}</p>
-            ${product.priceBox ? `<p><strong>Precio por Caja:</strong> ${window.GoogleSheets.formatPrice(product.priceBox)}</p>` : ''}
             ${product.stock !== undefined ? `<p><strong>Stock:</strong> <span style="color: ${product.stock > 0 ? '#2ecc71' : '#e74c3c'};">${product.stock} unidades</span></p>` : ''}
             <p><strong>Posición:</strong> ${position}</p>
         `;

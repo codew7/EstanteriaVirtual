@@ -6,7 +6,7 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    background: #e8f5e9;
     min-height: 100vh;
     padding: 10px;
     margin: 0;
@@ -81,7 +81,7 @@ header h1 {
 
 .search-input:focus, .category-filter:focus {
     outline: none;
-    border-color: #4CAF50;
+    border-color: #50bb54;
 }
 
 .loading {
@@ -95,7 +95,7 @@ header h1 {
 }
 
 .product-item {
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    background: #e3f2fd;
     padding: 12px;
     margin-bottom: 10px;
     border-radius: 8px;
@@ -107,7 +107,7 @@ header h1 {
 .product-item:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-    border-color: #4CAF50;
+    border-color: #50bb54;
 }
 
 .product-item.dragging {
@@ -116,8 +116,8 @@ header h1 {
 }
 
 .product-item.in-gondola {
-    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-    border-color: #4caf50;
+    background: #f1f8e9;
+    border-color: #81c784;
 }
 
 .product-name {
@@ -156,7 +156,7 @@ header h1 {
 
 .stats span {
     font-weight: bold;
-    color: #4CAF50;
+    color: #50bb54;
 }
 
 /* Góndola */
@@ -194,12 +194,12 @@ header h1 {
 }
 
 .legend-box.empty {
-    background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
-    border: 2px dashed #999;
+    background: #fafafa;
+    border: 2px dashed #bdbdbd;
 }
 
 .legend-box.occupied {
-    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    background: #a5d6a7;
 }
 
 .gondola {
@@ -214,8 +214,8 @@ header h1 {
 
 
 .shelf-cell {
-    background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
-    border: 2px dashed #999;
+    background: #fafafa;
+    border: 2px dashed #bdbdbd;
     border-radius: 8px;
     min-height: 70px;
     display: flex;
@@ -228,26 +228,26 @@ header h1 {
 }
 
 .shelf-cell:hover {
-    background: linear-gradient(135deg, #e8f4f8 0%, #d1e7f0 100%);
-    border-color: #4CAF50;
+    background: #e1f5fe;
+    border-color: #81c784;
     transform: scale(1.02);
 }
 
 .shelf-cell.drag-over {
-    background: linear-gradient(135deg, #c3e6cb 0%, #a3d9a5 100%);
-    border-color: #28a745;
+    background: #c8e6c9;
+    border-color: #66bb6a;
     border-style: solid;
     transform: scale(1.05);
 }
 
 .shelf-cell.occupied {
-    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-    border: 2px solid #388E3C;
+    background: #a5d6a7;
+    border: 2px solid #81c784;
     border-style: solid;
 }
 
 .shelf-cell.occupied:hover {
-    background: linear-gradient(135deg, #66BB6A 0%, #4CAF50 200%);
+    background: #c8e6c9;
     transform: scale(1.05);
 }
 
@@ -353,8 +353,8 @@ header h1 {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-    color: white;
+    background: #a5d6a7;
+    color: #2e7d32;
 }
 
 .btn-primary:hover {
@@ -363,8 +363,8 @@ header h1 {
 }
 
 .btn-secondary {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    color: white;
+    background: #f8bbd0;
+    color: #c2185b;
 }
 
 .btn-secondary:hover {
@@ -373,8 +373,8 @@ header h1 {
 }
 
 .btn-danger {
-    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-    color: white;
+    background: #ffcdd2;
+    color: #c62828;
 }
 
 .btn-danger:hover {
@@ -453,7 +453,7 @@ header h1 {
 }
 
 .products-panel::-webkit-scrollbar-thumb {
-    background: #4CAF50;
+    background: #50bb54;
     border-radius: 10px;
 }
 
