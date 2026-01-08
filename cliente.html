@@ -65,12 +65,149 @@
             display: flex;
             align-items: center;
             gap: 1px;
-            animation: fadeInOut 3s ease-in-out infinite;
-        }
+            animation: fadeInOut 3s ease-in-out infinite;            white-space: nowrap;
+            font-family: Arial, sans-serif;        }
         
         @keyframes fadeInOut {
             0%, 100% { opacity: 0.3; }
             50% { opacity: 0.8; }
+        }
+        
+        /* Modal Selector de Góndola */
+        .gondola-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(3px);
+        }
+        
+        .gondola-modal-content {
+            background: #ffffff;
+            width: 90%;
+            max-width: 320px;
+            border-radius: 16px;
+            padding: 0;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            animation: modalSlideIn 0.3s ease-out;
+        }
+        
+        @keyframes modalSlideIn {
+            0% {
+                transform: translateY(50px) scale(0.95);
+                opacity: 0;
+            }
+            100% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.4em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .modal-subtitle {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-top: 5px;
+            font-weight: 400;
+        }
+        
+        .gondolas-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding: 20px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        
+        .gondola-option {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 16px 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-height: 70px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        
+        .gondola-option:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border-color: #6c757d;
+        }
+        
+        .gondola-option:active {
+            transform: translateY(0);
+        }
+        
+        .gondola-option .number {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #495057;
+        }
+        
+        .gondola-option .label {
+            font-size: 0.8em;
+            color: #6c757d;
+            font-weight: 500;
+        }
+        
+        .gondola-option.current {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #5a67d8;
+        }
+        
+        .gondola-option.current .number,
+        .gondola-option.current .label {
+            color: white;
+        }
+        
+        .modal-footer {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .modal-help-text {
+            text-align: center;
+            font-size: 0.8em;
+            color: #6c757d;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
         
         .client-header-logo {
@@ -288,6 +425,26 @@
         </section>
     </div>
 
+    <!-- Modal Selector de Góndola -->
+    <div id="gondolaModal" class="gondola-modal" style="display: none;">
+        <div class="gondola-modal-content">
+            <div class="modal-header">
+                <h2>
+                    🏪 Seleccionar Estantería
+                </h2>
+                <div class="modal-subtitle">Elige la estantería que deseas ver</div>
+            </div>
+            <div id="gondolasGrid" class="gondolas-grid">
+                <!-- Se generará dinámicamente -->
+            </div>
+            <div class="modal-footer">
+                <p class="modal-help-text">
+                    👆 Toca una estantería | ↔️ O desliza para navegar
+                </p>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -295,6 +452,120 @@
     <script src="google-sheets.js"></script>
     
     <script>
+        // ========================================
+        // MODAL SELECTOR DE GÓNDOLA
+        // ========================================
+        
+        class GondolaModal {
+            constructor() {
+                this.modal = null;
+                this.isFirstVisit = this.checkFirstVisit();
+            }
+            
+            checkFirstVisit() {
+                // Verificar si es la primera visita o si no hay góndola especificada en la URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const gondolaParam = urlParams.get('gondola');
+                
+                // Mostrar modal si no hay parámetro de góndola o si es la primera visita
+                return !gondolaParam || gondolaParam === '1';
+            }
+            
+            init() {
+                this.modal = document.getElementById('gondolaModal');
+                this.renderGondolaOptions();
+                
+                // Mostrar modal si es necesario
+                if (this.isFirstVisit) {
+                    this.showModal();
+                }
+                
+                // Cerrar modal al hacer clic fuera del contenido
+                this.modal.addEventListener('click', (e) => {
+                    if (e.target === this.modal) {
+                        this.hideModal();
+                    }
+                });
+            }
+            
+            renderGondolaOptions() {
+                const grid = document.getElementById('gondolasGrid');
+                const totalGondolas = window.CONFIG.gondola.totalGondolas;
+                const currentGondolaId = parseInt(new URLSearchParams(window.location.search).get('gondola')) || 1;
+                
+                grid.innerHTML = '';
+                
+                for (let i = 1; i <= totalGondolas; i++) {
+                    const option = document.createElement('div');
+                    option.className = `gondola-option ${i === currentGondolaId ? 'current' : ''}`;
+                    option.innerHTML = `
+                        <div class="number">${i}</div>
+                        <div class="label">Estantería</div>
+                    `;
+                    
+                    option.addEventListener('click', () => {
+                        this.selectGondola(i);
+                    });
+                    
+                    grid.appendChild(option);
+                }
+            }
+            
+            selectGondola(gondolaId) {
+                const currentGondolaId = parseInt(new URLSearchParams(window.location.search).get('gondola')) || 1;
+                
+                if (gondolaId !== currentGondolaId) {
+                    // Agregar efecto visual
+                    const selectedOption = document.querySelector(`.gondola-option:nth-child(${gondolaId})`);
+                    if (selectedOption) {
+                        selectedOption.style.transform = 'scale(0.95)';
+                        selectedOption.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                        selectedOption.style.color = 'white';
+                    }
+                    
+                    // Cerrar modal con animación
+                    this.hideModal();
+                    
+                    // Cambiar a la nueva góndola después de un breve delay
+                    setTimeout(() => {
+                        window.location.href = `?gondola=${gondolaId}`;
+                    }, 200);
+                } else {
+                    // Si es la misma góndola, solo cerrar el modal
+                    this.hideModal();
+                }
+            }
+            
+            showModal() {
+                if (this.modal) {
+                    this.modal.style.display = 'flex';
+                    // Pequeño delay para la animación
+                    setTimeout(() => {
+                        this.modal.style.opacity = '1';
+                    }, 10);
+                    
+                    // Prevenir scroll del body
+                    document.body.style.overflow = 'hidden';
+                }
+            }
+            
+            hideModal() {
+                if (this.modal) {
+                    this.modal.style.opacity = '0';
+                    setTimeout(() => {
+                        this.modal.style.display = 'none';
+                        document.body.style.overflow = 'auto';
+                    }, 200);
+                }
+            }
+            
+            // Método público para mostrar el modal desde otros componentes
+            show() {
+                this.renderGondolaOptions();
+                this.showModal();
+            }
+        }
+
         // ========================================
         // VISTA CLIENTE MINIMALISTA (SOLO LECTURA)
         // ========================================
@@ -362,6 +633,14 @@
                 selector.addEventListener('change', (e) => {
                     const newGondolaId = parseInt(e.target.value);
                     window.location.href = `?gondola=${newGondolaId}`;
+                });
+                
+                // Agregar evento click para abrir modal
+                selector.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (window.gondolaModal && totalGondolas > 1) {
+                        window.gondolaModal.show();
+                    }
                 });
             }
             
@@ -648,6 +927,10 @@
         // Inicializar vista cliente
         document.addEventListener('DOMContentLoaded', () => {
             window.clientView = new ClienteGondolaView();
+            
+            // Inicializar modal selector
+            window.gondolaModal = new GondolaModal();
+            window.gondolaModal.init();
             
             // Inicializar manejador de swipe después de que se cargue la vista cliente
             setTimeout(() => {
