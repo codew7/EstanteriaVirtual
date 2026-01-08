@@ -13,6 +13,14 @@
             background: #f5f5f5;
             width: 100%;
             overflow-x: hidden;
+            transition: opacity 0.3s ease;
+            /* Prevenir selección de texto durante swipes */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            /* Prevenir zoom en dispositivos móviles */
+            touch-action: pan-y;
         }
         
         .container {
@@ -44,6 +52,25 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            position: relative;
+        }
+        
+        .swipe-indicator {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.7em;
+            color: #999;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            animation: fadeInOut 3s ease-in-out infinite;
+        }
+        
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.8; }
         }
         
         .client-header-logo {
@@ -247,6 +274,9 @@
                         <!-- Se generará dinámicamente -->
                     </select>
                 </span>
+                <div class="swipe-indicator" id="swipeIndicator" style="display: none;">
+                    ← Deslizar → para cambiar
+                </div>
             </h1>
             <img src="logo.png" alt="Logo" class="client-header-logo">
         </header>
@@ -318,6 +348,14 @@
                         option.selected = true;
                     }
                     selector.appendChild(option);
+                }
+                
+                // Mostrar indicador de swipe solo si hay más de una góndola
+                const swipeIndicator = document.getElementById('swipeIndicator');
+                if (totalGondolas > 1) {
+                    swipeIndicator.style.display = 'flex';
+                } else {
+                    swipeIndicator.style.display = 'none';
                 }
                 
                 // Evento de cambio
@@ -509,9 +547,113 @@
             }
         }
         
+        // ========================================
+        // FUNCIONALIDAD DE DESLIZAMIENTO (SWIPE)
+        // ========================================
+        
+        class SwipeHandler {
+            constructor() {
+                this.startX = 0;
+                this.startY = 0;
+                this.endX = 0;
+                this.endY = 0;
+                this.minSwipeDistance = 50; // Distancia mínima para considerar un swipe
+                this.maxVerticalDistance = 100; // Máxima distancia vertical permitida para un swipe horizontal
+                
+                this.init();
+            }
+            
+            init() {
+                // Agregar event listeners para touch events
+                document.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: true });
+                document.addEventListener('touchend', (e) => this.handleTouchEnd(e), { passive: true });
+                
+                // Opcional: Agregar soporte para mouse (para testing en desktop)
+                document.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+                document.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+            }
+            
+            handleTouchStart(e) {
+                this.startX = e.touches[0].clientX;
+                this.startY = e.touches[0].clientY;
+            }
+            
+            handleTouchEnd(e) {
+                this.endX = e.changedTouches[0].clientX;
+                this.endY = e.changedTouches[0].clientY;
+                
+                this.handleSwipe();
+            }
+            
+            handleMouseDown(e) {
+                this.startX = e.clientX;
+                this.startY = e.clientY;
+            }
+            
+            handleMouseUp(e) {
+                this.endX = e.clientX;
+                this.endY = e.clientY;
+                
+                this.handleSwipe();
+            }
+            
+            handleSwipe() {
+                const deltaX = this.endX - this.startX;
+                const deltaY = this.endY - this.startY;
+                
+                const distanceX = Math.abs(deltaX);
+                const distanceY = Math.abs(deltaY);
+                
+                // Verificar si es un swipe horizontal válido
+                if (distanceX >= this.minSwipeDistance && distanceY <= this.maxVerticalDistance) {
+                    if (deltaX > 0) {
+                        // Swipe hacia la derecha - ir a góndola anterior
+                        this.changeGondola(-1);
+                    } else {
+                        // Swipe hacia la izquierda - ir a góndola siguiente
+                        this.changeGondola(1);
+                    }
+                }
+            }
+            
+            changeGondola(direction) {
+                const currentGondolaId = window.clientView.gondolaId;
+                const totalGondolas = window.CONFIG.gondola.totalGondolas;
+                
+                let newGondolaId;
+                
+                if (direction > 0) {
+                    // Ir a la siguiente góndola
+                    newGondolaId = currentGondolaId >= totalGondolas ? 1 : currentGondolaId + 1;
+                } else {
+                    // Ir a la góndola anterior
+                    newGondolaId = currentGondolaId <= 1 ? totalGondolas : currentGondolaId - 1;
+                }
+                
+                // Cambiar a la nueva góndola
+                if (newGondolaId !== currentGondolaId) {
+                    console.log(`🔄 Swipe detectado: Cambiando de Estantería ${currentGondolaId} a ${newGondolaId}`);
+                    
+                    // Agregar efecto visual de transición
+                    document.body.style.opacity = '0.7';
+                    document.body.style.transition = 'opacity 0.2s ease';
+                    
+                    setTimeout(() => {
+                        window.location.href = `?gondola=${newGondolaId}`;
+                    }, 100);
+                }
+            }
+        }
+
         // Inicializar vista cliente
         document.addEventListener('DOMContentLoaded', () => {
             window.clientView = new ClienteGondolaView();
+            
+            // Inicializar manejador de swipe después de que se cargue la vista cliente
+            setTimeout(() => {
+                window.swipeHandler = new SwipeHandler();
+                console.log('👆 Funcionalidad de swipe habilitada');
+            }, 500);
             
             // Cerrar página automáticamente después de 30 minutos
             setTimeout(() => {
