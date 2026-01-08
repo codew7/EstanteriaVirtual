@@ -36,7 +36,7 @@
             color: #333;
             padding: 15px 12px;
             border-radius: 8px;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
             display: flex;
             align-items: center;
@@ -458,6 +458,91 @@
     
     <script>
         // ========================================
+        // GESTOR DE TODAS LAS GÓNDOLAS (PRECARGA)
+        // ========================================
+        
+        class GondolaManager {
+            constructor() {
+                this.allGondolasData = {};
+                this.totalGondolas = window.CONFIG.gondola.totalGondolas;
+                this.isLoading = false;
+                this.loadingPromise = null;
+            }
+            
+            async preloadAllGondolas() {
+                if (this.isLoading) {
+                    return this.loadingPromise;
+                }
+                
+                this.isLoading = true;
+                console.log('🚀 Iniciando precarga de todas las estanterías...');
+                
+                this.loadingPromise = this.performPreload();
+                await this.loadingPromise;
+                
+                this.isLoading = false;
+                console.log('✅ Todas las estanterías precargadas y listas!');
+                
+                return this.allGondolasData;
+            }
+            
+            async performPreload() {
+                const promises = [];
+                
+                for (let gondolaId = 1; gondolaId <= this.totalGondolas; gondolaId++) {
+                    promises.push(this.loadSingleGondola(gondolaId));
+                }
+                
+                const results = await Promise.allSettled(promises);
+                
+                // Procesar resultados
+                results.forEach((result, index) => {
+                    const gondolaId = index + 1;
+                    if (result.status === 'fulfilled') {
+                        this.allGondolasData[gondolaId] = result.value;
+                        console.log(`✅ Estantería ${gondolaId} cargada`);
+                    } else {
+                        console.warn(`⚠️ Error cargando Estantería ${gondolaId}:`, result.reason);
+                        this.allGondolasData[gondolaId] = {};
+                    }
+                });
+            }
+            
+            async loadSingleGondola(gondolaId) {
+                try {
+                    const firebasePath = window.CONFIG.gondola.getFirebasePath(gondolaId);
+                    const ref = window.CONFIG.database.ref(firebasePath);
+                    
+                    const snapshot = await ref.once('value');
+                    const data = snapshot.val();
+                    
+                    if (data) {
+                        const gondolaData = {};
+                        Object.entries(data).forEach(([position, info]) => {
+                            if (info && info.productId) {
+                                gondolaData[position] = info.productId;
+                            }
+                        });
+                        return gondolaData;
+                    }
+                    
+                    return {};
+                } catch (error) {
+                    console.error(`Error cargando góndola ${gondolaId}:`, error);
+                    return {};
+                }
+            }
+            
+            getGondolaData(gondolaId) {
+                return this.allGondolasData[gondolaId] || {};
+            }
+            
+            isDataLoaded() {
+                return Object.keys(this.allGondolasData).length > 0;
+            }
+        }
+
+        // ========================================
         // MODAL SELECTOR DE GÓNDOLA
         // ========================================
         
@@ -517,7 +602,7 @@
             }
             
             selectGondola(gondolaId) {
-                const currentGondolaId = parseInt(new URLSearchParams(window.location.search).get('gondola')) || 1;
+                const currentGondolaId = window.clientView.gondolaId;
                 
                 if (gondolaId !== currentGondolaId) {
                     // Agregar efecto visual
@@ -531,9 +616,9 @@
                     // Cerrar modal con animación
                     this.hideModal();
                     
-                    // Cambiar a la nueva góndola después de un breve delay
+                    // Cambiar a la nueva góndola INSTANTÁNEAMENTE (sin recarga)
                     setTimeout(() => {
-                        window.location.href = `?gondola=${gondolaId}`;
+                        window.clientView.switchToGondola(gondolaId);
                     }, 200);
                 } else {
                     // Si es la misma góndola, solo cerrar el modal
@@ -590,6 +675,9 @@
                 this.shelves = gondolaSettings.shelves;
                 this.gondolaData = {};
                 
+                // Referencia al gestor de góndalas
+                this.gondolaManager = null;
+                
                 this.init();
             }
             
@@ -604,11 +692,83 @@
                 document.title = `Estantería ${this.gondolaId}`;
                 this.renderGondolaSelector();
                 
+                // Inicializar gestor de góndalas
+                this.gondolaManager = new GondolaManager();
+                window.gondolaManager = this.gondolaManager;
+                
                 await this.loadProducts();
                 this.createGondola();
-                await this.loadGondolaFromFirebase();
                 
-                console.log("✅ Vista cliente lista");
+                // Precargar TODAS las góndalas en paralelo
+                await this.gondolaManager.preloadAllGondolas();
+                
+                // Cargar la góndola actual desde datos precargados
+                this.loadGondolaFromCache();
+                
+                console.log("✅ Vista cliente lista con todas las estanterías precargadas");
+            }
+            
+            // NUEVO MÉTODO: Cambiar de góndola instantáneamente
+            switchToGondola(newGondolaId) {
+                if (newGondolaId === this.gondolaId) return;
+                
+                console.log(`🔄 Cambiando instantáneamente a Estantería ${newGondolaId}`);
+                
+                // Actualizar el ID actual
+                this.gondolaId = newGondolaId;
+                
+                // Obtener configuración de la nueva góndola
+                const gondolaSettings = window.CONFIG.gondola.gondolaSettings[this.gondolaId] || {
+                    name: `Góndola ${this.gondolaId}`,
+                    columns: window.CONFIG.gondola.defaultColumns,
+                    shelves: window.CONFIG.gondola.defaultShelves
+                };
+                
+                this.gondolaName = gondolaSettings.name;
+                this.columns = gondolaSettings.columns;
+                this.shelves = gondolaSettings.shelves;
+                
+                // Actualizar URL sin recargar
+                const newUrl = `${window.location.pathname}?gondola=${newGondolaId}`;
+                window.history.pushState({gondola: newGondolaId}, '', newUrl);
+                
+                // Actualizar título
+                document.title = `Estantería ${this.gondolaId}`;
+                
+                // Actualizar selector
+                this.renderGondolaSelector();
+                
+                // Recrear grid si es necesario
+                this.createGondola();
+                
+                // Cargar datos desde cache
+                this.loadGondolaFromCache();
+                
+                console.log(`✅ Cambio instantáneo completado a Estantería ${newGondolaId}`);
+            }
+            
+            // NUEVO MÉTODO: Cargar desde datos precargados
+            loadGondolaFromCache() {
+                if (!this.gondolaManager || !this.gondolaManager.isDataLoaded()) {
+                    console.warn('⚠️ Datos no disponibles en cache, cargando desde Firebase...');
+                    this.loadGondolaFromFirebase();
+                    return;
+                }
+                
+                // Obtener datos precargados
+                this.gondolaData = this.gondolaManager.getGondolaData(this.gondolaId);
+                
+                // Actualizar todas las celdas
+                document.querySelectorAll('.shelf-cell').forEach(cell => {
+                    const position = cell.dataset.position;
+                    this.updateCellDisplay(position);
+                });
+                
+                // Ocultar filas y columnas vacías
+                this.hideEmptyRows();
+                this.hideEmptyColumns();
+                
+                console.log(`🚀 Estantería ${this.gondolaId} cargada INSTANTÁNEAMENTE desde cache`);
             }
             
             renderGondolaSelector() {
@@ -918,15 +1078,21 @@
                 
                 // Cambiar a la nueva góndola
                 if (newGondolaId !== currentGondolaId) {
-                    console.log(`🔄 Swipe detectado: Cambiando de Estantería ${currentGondolaId} a ${newGondolaId}`);
+                    console.log(`🔄 Swipe detectado: Cambiando instantáneamente de Estantería ${currentGondolaId} a ${newGondolaId}`);
                     
-                    // Agregar efecto visual de transición
-                    document.body.style.opacity = '0.7';
-                    document.body.style.transition = 'opacity 0.2s ease';
+                    // Efecto visual suave
+                    document.body.style.opacity = '0.8';
+                    document.body.style.transition = 'opacity 0.15s ease';
                     
                     setTimeout(() => {
-                        window.location.href = `?gondola=${newGondolaId}`;
-                    }, 100);
+                        // Cambio instantáneo sin recarga
+                        window.clientView.switchToGondola(newGondolaId);
+                        
+                        // Restaurar opacidad
+                        setTimeout(() => {
+                            document.body.style.opacity = '1';
+                        }, 50);
+                    }, 75);
                 }
             }
         }
