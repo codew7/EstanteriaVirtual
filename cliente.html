@@ -36,7 +36,7 @@
             color: #333;
             padding: 15px 12px;
             border-radius: 8px;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
             display: flex;
             align-items: center;
@@ -220,43 +220,49 @@
         }
         
         .gondola-selector {
-            display: inline-block;
-            position: relative;
-        }
-        
-        .gondola-selector select {
-            appearance: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
             background: #f5f5f5;
             border: 2px solid #e0e0e0;
-            border-radius: 6px;
-            padding: 6px 32px 6px 12px;
+            border-radius: 8px;
+            padding: 8px 12px;
             font-size: 1.1em;
             font-weight: 600;
             color: #333;
             cursor: pointer;
             transition: all 0.3s ease;
-            outline: none;
+            user-select: none;
+            position: relative;
         }
         
-        .gondola-selector select:hover {
+        .gondola-selector:hover {
             border-color: #bdbdbd;
             background: #eeeeee;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
         
-        .gondola-selector select:focus {
-            border-color: #999;
-            background: #ffffff;
+        .gondola-selector:active {
+            transform: translateY(0);
+            background: #e0e0e0;
         }
         
-        .gondola-selector::after {
-            content: '▼';
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            pointer-events: none;
-            color: #666;
+        .gondola-selector #gondolaNumber {
+            font-weight: bold;
+            color: #495057;
+            min-width: 20px;
+            text-align: center;
+        }
+        
+        .gondola-selector .selector-arrow {
+            color: #6c757d;
             font-size: 0.8em;
+            transition: transform 0.2s ease;
+        }
+        
+        .gondola-selector:hover .selector-arrow {
+            transform: translateY(-1px);
         }
         
         .gondola-container {
@@ -406,10 +412,9 @@
         <header class="client-header">
             <h1>
                 📍 Estantería Nro
-                <span class="gondola-selector">
-                    <select id="gondolaSelector" aria-label="Seleccionar estantería">
-                        <!-- Se generará dinámicamente -->
-                    </select>
+                <span class="gondola-selector" id="gondolaClickable" title="Toca para seleccionar otra estantería">
+                    <span id="gondolaNumber">1</span>
+                    <span class="selector-arrow">▼</span>
                 </span>
                 <div class="swipe-indicator" id="swipeIndicator" style="display: none;">
                     ← Deslizar → para cambiar
@@ -607,41 +612,43 @@
             }
             
             renderGondolaSelector() {
-                const selector = document.getElementById('gondolaSelector');
+                const gondolaNumberElement = document.getElementById('gondolaNumber');
+                const gondolaClickable = document.getElementById('gondolaClickable');
                 const totalGondolas = window.CONFIG.gondola.totalGondolas;
                 
-                selector.innerHTML = '';
-                for (let i = 1; i <= totalGondolas; i++) {
-                    const option = document.createElement('option');
-                    option.value = i;
-                    option.textContent = i;
-                    if (i === this.gondolaId) {
-                        option.selected = true;
-                    }
-                    selector.appendChild(option);
+                // Actualizar el número mostrado
+                if (gondolaNumberElement) {
+                    gondolaNumberElement.textContent = this.gondolaId;
                 }
                 
                 // Mostrar indicador de swipe solo si hay más de una góndola
                 const swipeIndicator = document.getElementById('swipeIndicator');
                 if (totalGondolas > 1) {
                     swipeIndicator.style.display = 'flex';
+                    
+                    // Hacer el elemento clickeable si hay múltiples góndolas
+                    if (gondolaClickable) {
+                        gondolaClickable.style.cursor = 'pointer';
+                        gondolaClickable.title = 'Toca para seleccionar otra estantería';
+                        
+                        // Agregar evento click para abrir modal
+                        gondolaClickable.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            if (window.gondolaModal) {
+                                window.gondolaModal.show();
+                            }
+                        });
+                    }
                 } else {
                     swipeIndicator.style.display = 'none';
-                }
-                
-                // Evento de cambio
-                selector.addEventListener('change', (e) => {
-                    const newGondolaId = parseInt(e.target.value);
-                    window.location.href = `?gondola=${newGondolaId}`;
-                });
-                
-                // Agregar evento click para abrir modal
-                selector.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    if (window.gondolaModal && totalGondolas > 1) {
-                        window.gondolaModal.show();
+                    
+                    // Desactivar interacción si solo hay una góndola
+                    if (gondolaClickable) {
+                        gondolaClickable.style.cursor = 'default';
+                        gondolaClickable.style.opacity = '0.7';
+                        gondolaClickable.title = 'Solo hay una estantería disponible';
                     }
-                });
+                }
             }
             
             async loadProducts() {
