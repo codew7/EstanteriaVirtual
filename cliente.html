@@ -613,7 +613,6 @@
             </div>
             <div class="product-detail-info">
                 <h3 id="productDetailName" class="product-detail-name"></h3>
-                <div id="productDetailPosition" class="product-detail-position"></div>
                 <div id="productDetailPrice" class="product-detail-price"></div>
                 <p id="productDetailId" class="product-detail-id"></p>
             </div>
@@ -1150,13 +1149,11 @@
                 const image = document.getElementById('productDetailImage');
                 const noImage = document.getElementById('productDetailNoImage');
                 const name = document.getElementById('productDetailName');
-                const positionEl = document.getElementById('productDetailPosition');
                 const price = document.getElementById('productDetailPrice');
                 const productId = document.getElementById('productDetailId');
                 
                 // Configurar contenido del modal
                 name.textContent = product.name;
-                positionEl.innerHTML = `📍 ${position}`;
                 price.textContent = window.GoogleSheets.formatPrice(product.price);
                 productId.textContent = `ID: ${product.id}`;
                 
