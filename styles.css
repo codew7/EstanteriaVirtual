@@ -247,7 +247,7 @@ header h1 {
 }
 
 .shelf-cell.occupied:hover {
-    background: #c8e6c9;
+    background: #cacaca;
     transform: scale(1.05);
 }
 
