@@ -803,11 +803,6 @@
                     
                     // Prevenir scroll del body
                     document.body.style.overflow = 'hidden';
-                    
-                    // Desactivar swipe mientras el modal está abierto
-                    if (window.swipeHandler) {
-                        window.swipeHandler.disable();
-                    }
                 }
             }
             
@@ -817,11 +812,6 @@
                     setTimeout(() => {
                         this.modal.style.display = 'none';
                         document.body.style.overflow = 'auto';
-                        
-                        // Reactivar swipe al cerrar el modal
-                        if (window.swipeHandler) {
-                            window.swipeHandler.enable();
-                        }
                     }, 200);
                 }
             }
@@ -1181,11 +1171,6 @@
                 // Mostrar modal
                 modal.classList.add('active');
                 document.body.style.overflow = 'hidden';
-                
-                // Desactivar swipe mientras el modal está abierto
-                if (window.swipeHandler) {
-                    window.swipeHandler.disable();
-                }
             }
         }
         
@@ -1201,7 +1186,6 @@
                 this.endY = 0;
                 this.minSwipeDistance = 50; // Distancia mínima para considerar un swipe
                 this.maxVerticalDistance = 100; // Máxima distancia vertical permitida para un swipe horizontal
-                this.enabled = true; // Control de activación del swipe
                 
                 this.init();
             }
@@ -1241,11 +1225,6 @@
             }
             
             handleSwipe() {
-                // No procesar swipe si está deshabilitado
-                if (!this.enabled) {
-                    return;
-                }
-                
                 const deltaX = this.endX - this.startX;
                 const deltaY = this.endY - this.startY;
                 
@@ -1297,17 +1276,6 @@
                     }, 75);
                 }
             }
-            
-            // Métodos públicos para controlar el swipe
-            disable() {
-                this.enabled = false;
-                console.log('🚫 Swipe deshabilitado temporalmente');
-            }
-            
-            enable() {
-                this.enabled = true;
-                console.log('✅ Swipe habilitado');
-            }
         }
 
         // Inicializar vista cliente
@@ -1332,11 +1300,6 @@
             closeBtn.addEventListener('click', () => {
                 productModal.classList.remove('active');
                 document.body.style.overflow = 'auto';
-                
-                // Reactivar swipe al cerrar el modal
-                if (window.swipeHandler) {
-                    window.swipeHandler.enable();
-                }
             });
             
             // Cerrar modal al hacer click fuera del contenido
@@ -1344,11 +1307,6 @@
                 if (e.target === productModal) {
                     productModal.classList.remove('active');
                     document.body.style.overflow = 'auto';
-                    
-                    // Reactivar swipe al cerrar el modal
-                    if (window.swipeHandler) {
-                        window.swipeHandler.enable();
-                    }
                 }
             });
             
