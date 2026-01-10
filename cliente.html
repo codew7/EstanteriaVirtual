@@ -57,7 +57,7 @@
         
         .swipe-indicator {
             position: absolute;
-            bottom: -30px;
+            bottom: -32px;
             left: 50%;
             transform: translateX(-50%);
             font-size: 0.7em;
@@ -320,20 +320,14 @@
         }
         
         .shelf-cell.enlarged {
-            position: fixed !important;
-            top: 50% !important;
-            left: 50% !important;
-            transform: translate(-50%, -50%) scale(1) !important;
+            transform: scale(1.8) !important;
             z-index: 10000;
             box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
-            width: 85vw !important;
-            max-width: 320px !important;
-            min-height: auto !important;
-            max-height: 85vh !important;
             border-radius: 12px !important;
             background: #ffffff !important;
-            border: 3px solid #667eea !important;
+            border: 3px solid #5b7de8 !important;
             overflow: visible !important;
+            position: relative !important;
         }
         
         .product-in-cell {
@@ -432,15 +426,15 @@
             font-size: 18px;
             font-weight: 700;
             color: #ffffff;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #5b7de8;
             padding: 10px 20px;
             border-radius: 8px;
             margin: 8px 12px 12px;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 4px 12px rgba(91, 125, 232, 0.4);
             letter-spacing: 0.5px;
         }
         
-        /* Overlay oscuro cuando hay un artículo ampliado */
+        /* Overlay sutil cuando hay un artículo ampliado */
         .shelf-cell.enlarged::before {
             content: '';
             position: fixed;
@@ -448,9 +442,8 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.6);
+            background: rgba(0, 0, 0, 0.3);
             z-index: -1;
-            backdrop-filter: blur(2px);
         }
         
         @media (min-width: 768px) {
@@ -681,6 +674,13 @@
             }
             
             selectGondola(gondolaId) {
+                // No permitir cambiar de góndola si hay artículo ampliado
+                const enlargedCell = document.querySelector('.shelf-cell.enlarged');
+                if (enlargedCell) {
+                    this.hideModal();
+                    return;
+                }
+                
                 const currentGondolaId = window.clientView.gondolaId;
                 
                 if (gondolaId !== currentGondolaId) {
@@ -873,6 +873,11 @@
                         // Agregar evento click para abrir modal
                         gondolaClickable.addEventListener('click', (e) => {
                             e.preventDefault();
+                            // No permitir abrir modal si hay artículo ampliado
+                            const enlargedCell = document.querySelector('.shelf-cell.enlarged');
+                            if (enlargedCell) {
+                                return;
+                            }
                             if (window.gondolaModal) {
                                 window.gondolaModal.show();
                             }
@@ -1131,6 +1136,12 @@
             }
             
             handleSwipe() {
+                // No permitir swipe si hay un artículo ampliado
+                const enlargedCell = document.querySelector('.shelf-cell.enlarged');
+                if (enlargedCell) {
+                    return;
+                }
+                
                 const deltaX = this.endX - this.startX;
                 const deltaY = this.endY - this.startY;
                 
