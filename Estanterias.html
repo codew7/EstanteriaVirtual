@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Estanterias</title>
+    <title>Gestión de Estantería</title>
     <link rel="stylesheet" href="styles.css">
     <style>
         /* Vista minimalista para administrador */
@@ -12,15 +12,22 @@
             margin: 0;
             background: #f5f5f5;
             width: 100%;
-            overflow-x: hidden;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
         
         .container {
             max-width: 100%;
             width: 100%;
+            height: 100%;
             margin: 0 auto;
-            padding: 5px 1px;
+            padding: 5px;
             box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
         
         header {
@@ -208,18 +215,56 @@
             color: #999;
         }
         
-        .gondola-container {
+        .main-content {
+            flex: 1;
+            display: flex;
+            gap: 10px;
+            overflow: hidden;
+            min-height: 0;
+        }
+        
+        .products-panel {
+            width: 280px;
+            flex-shrink: 0;
             background: #ffffff;
             border-radius: 10px;
             padding: 15px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .products-list {
+            flex: 1;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        
+        .gondola-container {
+            flex: 1;
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-width: 0;
         }
         
         .gondola-container h2 {
             color: #333;
             font-size: 1.2em;
-            margin: 0 0 15px 0;
+            margin: 0 0 10px 0;
             text-align: center;
+            flex-shrink: 0;
+        }
+        
+        .gondola-container #gondola {
+            flex: 1;
+            overflow: auto;
+            min-height: 0;
         }
         
         /* Estilos para el selector de góndola */
@@ -353,8 +398,8 @@
         <header>
             <h1>🏪 Gestión de Ubicación de Productos</h1>
             <div class="header-controls">
-                <button id="changeGondolaBtn" class="btn-secondary">Cambiar Góndola</button>
-                <button id="clearAllBtn" class="btn-danger">Limpiar Góndola</button>
+                <button id="changeGondolaBtn" class="btn-secondary">Cambiar Estantería</button>
+                <button id="clearAllBtn" class="btn-danger">Limpiar Estantería</button>
             </div>
         </header>
 

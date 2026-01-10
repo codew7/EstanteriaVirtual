@@ -598,7 +598,12 @@ class GondolaApp {
         
         // Botones de control
         document.getElementById('clearAllBtn').addEventListener('click', () => {
-            this.clearGondola();
+            const password = prompt('Ingrese la clave para limpiar la góndola:');
+            if (password === '2278') {
+                this.clearGondola();
+            } else if (password !== null) {
+                alert('Clave incorrecta. No se puede limpiar la góndola.');
+            }
         });
         
         // Modal
