@@ -148,7 +148,7 @@
             background: #f8f9fa;
             border: 2px solid #e9ecef;
             border-radius: 12px;
-            padding: 5px 5px;
+            padding: 16px 8px;
             text-align: center;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -803,6 +803,11 @@
                     
                     // Prevenir scroll del body
                     document.body.style.overflow = 'hidden';
+                    
+                    // Desactivar swipe mientras el modal está abierto
+                    if (window.swipeHandler) {
+                        window.swipeHandler.disable();
+                    }
                 }
             }
             
@@ -812,6 +817,11 @@
                     setTimeout(() => {
                         this.modal.style.display = 'none';
                         document.body.style.overflow = 'auto';
+                        
+                        // Reactivar swipe al cerrar el modal
+                        if (window.swipeHandler) {
+                            window.swipeHandler.enable();
+                        }
                     }, 200);
                 }
             }
@@ -1168,14 +1178,14 @@
                     noImage.style.display = 'flex';
                 }
                 
+                // Mostrar modal
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                
                 // Desactivar swipe mientras el modal está abierto
                 if (window.swipeHandler) {
                     window.swipeHandler.disable();
                 }
-                
-                // Mostrar modal
-                modal.classList.add('active');
-                document.body.style.overflow = 'hidden';
             }
         }
         
@@ -1191,7 +1201,7 @@
                 this.endY = 0;
                 this.minSwipeDistance = 50; // Distancia mínima para considerar un swipe
                 this.maxVerticalDistance = 100; // Máxima distancia vertical permitida para un swipe horizontal
-                this.enabled = true; // Control para activar/desactivar swipe
+                this.enabled = true; // Control de activación del swipe
                 
                 this.init();
             }
@@ -1232,7 +1242,9 @@
             
             handleSwipe() {
                 // No procesar swipe si está deshabilitado
-                if (!this.enabled) return;
+                if (!this.enabled) {
+                    return;
+                }
                 
                 const deltaX = this.endX - this.startX;
                 const deltaY = this.endY - this.startY;
@@ -1250,18 +1262,6 @@
                         this.changeGondola(1);
                     }
                 }
-            }
-            
-            // Método para desactivar el swipe
-            disable() {
-                this.enabled = false;
-                console.log('🚫 Swipe deshabilitado');
-            }
-            
-            // Método para activar el swipe
-            enable() {
-                this.enabled = true;
-                console.log('✅ Swipe habilitado');
             }
             
             changeGondola(direction) {
@@ -1297,6 +1297,17 @@
                     }, 75);
                 }
             }
+            
+            // Métodos públicos para controlar el swipe
+            disable() {
+                this.enabled = false;
+                console.log('🚫 Swipe deshabilitado temporalmente');
+            }
+            
+            enable() {
+                this.enabled = true;
+                console.log('✅ Swipe habilitado');
+            }
         }
 
         // Inicializar vista cliente
@@ -1322,7 +1333,7 @@
                 productModal.classList.remove('active');
                 document.body.style.overflow = 'auto';
                 
-                // Reactivar swipe al cerrar modal
+                // Reactivar swipe al cerrar el modal
                 if (window.swipeHandler) {
                     window.swipeHandler.enable();
                 }
@@ -1334,7 +1345,7 @@
                     productModal.classList.remove('active');
                     document.body.style.overflow = 'auto';
                     
-                    // Reactivar swipe al cerrar modal
+                    // Reactivar swipe al cerrar el modal
                     if (window.swipeHandler) {
                         window.swipeHandler.enable();
                     }
