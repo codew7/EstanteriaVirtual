@@ -57,7 +57,7 @@
         
         .swipe-indicator {
             position: absolute;
-            bottom: -30px;
+            bottom: -32px;
             left: 50%;
             transform: translateX(-50%);
             font-size: 0.7em;
@@ -139,7 +139,7 @@
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 12px;
-            padding: 20px;
+            padding: 5px;
             max-height: 60vh;
             overflow-y: auto;
         }
@@ -611,7 +611,6 @@
             </div>
             <div class="product-detail-info">
                 <h3 id="productDetailName" class="product-detail-name"></h3>
-                <p id="productDetailPosition" class="product-detail-position"></p>
                 <div id="productDetailPrice" class="product-detail-price"></div>
                 <p id="productDetailId" class="product-detail-id"></p>
             </div>
@@ -1172,6 +1171,11 @@
                 // Mostrar modal
                 modal.classList.add('active');
                 document.body.style.overflow = 'hidden';
+                
+                // Desactivar swipe mientras el modal está abierto
+                if (window.swipeHandler) {
+                    window.swipeHandler.disable();
+                }
             }
         }
         
@@ -1187,8 +1191,17 @@
                 this.endY = 0;
                 this.minSwipeDistance = 50; // Distancia mínima para considerar un swipe
                 this.maxVerticalDistance = 100; // Máxima distancia vertical permitida para un swipe horizontal
+                this.enabled = true; // Control para activar/desactivar el swipe
                 
                 this.init();
+            }
+            
+            enable() {
+                this.enabled = true;
+            }
+            
+            disable() {
+                this.enabled = false;
             }
             
             init() {
@@ -1226,6 +1239,11 @@
             }
             
             handleSwipe() {
+                // No procesar swipe si está deshabilitado
+                if (!this.enabled) {
+                    return;
+                }
+                
                 const deltaX = this.endX - this.startX;
                 const deltaY = this.endY - this.startY;
                 
@@ -1301,6 +1319,11 @@
             closeBtn.addEventListener('click', () => {
                 productModal.classList.remove('active');
                 document.body.style.overflow = 'auto';
+                
+                // Reactivar swipe al cerrar el modal
+                if (window.swipeHandler) {
+                    window.swipeHandler.enable();
+                }
             });
             
             // Cerrar modal al hacer click fuera del contenido
@@ -1308,6 +1331,11 @@
                 if (e.target === productModal) {
                     productModal.classList.remove('active');
                     document.body.style.overflow = 'auto';
+                    
+                    // Reactivar swipe al cerrar el modal
+                    if (window.swipeHandler) {
+                        window.swipeHandler.enable();
+                    }
                 }
             });
             
