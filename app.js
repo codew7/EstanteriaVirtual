@@ -359,8 +359,7 @@ class GondolaApp {
             
             if (productId) {
                 await ref.set({
-                    productId: productId,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                    productId: productId
                 });
             } else {
                 await ref.remove();
