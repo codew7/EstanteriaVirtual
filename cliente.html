@@ -57,7 +57,7 @@
         
         .swipe-indicator {
             position: absolute;
-            bottom: -32px;
+            bottom: -30px;
             left: 50%;
             transform: translateX(-50%);
             font-size: 0.7em;
@@ -320,14 +320,14 @@
         }
         
         .shelf-cell.enlarged {
-            transform: scale(1.8) !important;
+            transform: scale(1.85) !important;
             z-index: 10000;
             box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
             border-radius: 12px !important;
             background: #ffffff !important;
-            border: 3px solid #5b7de8 !important;
+            border: 3px solid #6366f1 !important;
             overflow: visible !important;
-            position: relative !important;
+            position: relative;
         }
         
         .product-in-cell {
@@ -426,11 +426,11 @@
             font-size: 18px;
             font-weight: 700;
             color: #ffffff;
-            background: #5b7de8;
+            background: #6366f1;
             padding: 10px 20px;
             border-radius: 8px;
             margin: 8px 12px 12px;
-            box-shadow: 0 4px 12px rgba(91, 125, 232, 0.4);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
             letter-spacing: 0.5px;
         }
         
@@ -442,8 +442,9 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.25);
             z-index: -1;
+            backdrop-filter: blur(1px);
         }
         
         @media (min-width: 768px) {
@@ -674,13 +675,6 @@
             }
             
             selectGondola(gondolaId) {
-                // No permitir cambiar de góndola si hay artículo ampliado
-                const enlargedCell = document.querySelector('.shelf-cell.enlarged');
-                if (enlargedCell) {
-                    this.hideModal();
-                    return;
-                }
-                
                 const currentGondolaId = window.clientView.gondolaId;
                 
                 if (gondolaId !== currentGondolaId) {
@@ -873,11 +867,6 @@
                         // Agregar evento click para abrir modal
                         gondolaClickable.addEventListener('click', (e) => {
                             e.preventDefault();
-                            // No permitir abrir modal si hay artículo ampliado
-                            const enlargedCell = document.querySelector('.shelf-cell.enlarged');
-                            if (enlargedCell) {
-                                return;
-                            }
                             if (window.gondolaModal) {
                                 window.gondolaModal.show();
                             }
@@ -915,21 +904,27 @@
                         cell.className = 'shelf-cell';
                         cell.dataset.position = position;
                         
-                        // Agregar evento click para agrandar
+                        // Agregar evento click para agrandar/minimizar
                         cell.addEventListener('click', (e) => {
                             e.stopPropagation();
                             
                             if (cell.classList.contains('occupied')) {
-                                // Remover enlarged de todas las celdas
-                                document.querySelectorAll('.shelf-cell.enlarged').forEach(c => {
-                                    c.classList.remove('enlarged');
-                                });
-                                
-                                // Agregar enlarged a la celda clickeada
-                                cell.classList.add('enlarged');
-                                
-                                // Prevenir scroll del body cuando está ampliado
-                                document.body.style.overflow = 'hidden';
+                                // Si ya está ampliado, minimizarlo
+                                if (cell.classList.contains('enlarged')) {
+                                    cell.classList.remove('enlarged');
+                                    document.body.style.overflow = 'auto';
+                                } else {
+                                    // Remover enlarged de todas las celdas
+                                    document.querySelectorAll('.shelf-cell.enlarged').forEach(c => {
+                                        c.classList.remove('enlarged');
+                                    });
+                                    
+                                    // Agregar enlarged a la celda clickeada
+                                    cell.classList.add('enlarged');
+                                    
+                                    // Prevenir scroll del body cuando está ampliado
+                                    document.body.style.overflow = 'hidden';
+                                }
                             }
                         });
                         
@@ -1136,12 +1131,6 @@
             }
             
             handleSwipe() {
-                // No permitir swipe si hay un artículo ampliado
-                const enlargedCell = document.querySelector('.shelf-cell.enlarged');
-                if (enlargedCell) {
-                    return;
-                }
-                
                 const deltaX = this.endX - this.startX;
                 const deltaY = this.endY - this.startY;
                 
